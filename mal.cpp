@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -65,7 +66,6 @@ void ReservationTable :: forbiddenLat(){
 
     int latency;
     int pos1, pos2;
-
     vector<int> buffer;
 
     int minuend;
@@ -74,10 +74,14 @@ void ReservationTable :: forbiddenLat(){
         for(int j = 0; j < time_interval; j++){
             //Calculate latency
             if(table[i][j] == 1)
-                forbidden.push_back(j);
+                buffer.push_back(j);
         }
     }
-    
+
+    //Removing duplicates from the buffer
+    std::sort(buffer.begin(), buffer.end());
+    std::unique_copy(buffer.begin(), buffer.end(), std::back_inserter(forbidden));
+
     cout<<endl;
     cout<<endl<<"Forbidden Latency : ";
     for(int i = 0; i < forbidden.size(); i++){
