@@ -11,8 +11,12 @@ class ReservationTable{
         vector<int> table[10];
         vector<int> forbidden; 
     public:
+        //Create the reservation table
         void readTable();
+        //Calculate the forbidden latencies
         void forbiddenLat();
+        //Calculate the collision vector
+        void collisionVect();
 };
 
 class StateDiagram : public ReservationTable{
@@ -27,7 +31,6 @@ class Cycles : public StateDiagram{
 };
 
 void ReservationTable :: readTable(){
-
     int temp;
 
     cout<<"Enter number of stages"<<endl;
@@ -35,8 +38,9 @@ void ReservationTable :: readTable(){
     cout<<"Enter the number of clock cycles"<<endl;
     cin>>time_interval;
 
+    //TODO: Improve the input process...
     for(int i = 0; i < stages; i++){
-        cout<<"Enter the values for Stage "<<(i + 1)<<", row-wise (1 for job execituion 0 for nothing)"<<endl;
+        cout<<"Enter the values for Stage-"<<(i + 1)<<", row-wise (1 for job execituion 0 for nothing)"<<endl;
         for(int j = 0; j < time_interval; j++){
             cin>>temp;
             table[i].push_back(temp);
@@ -67,20 +71,33 @@ void ReservationTable :: forbiddenLat(){
     int latency;
     int pos1, pos2;
     vector<int> buffer;
+    vector<int> forb;
 
-    int minuend;
-
+    //Pushing all the obvious latensies into the buffer
     for(int i = 0; i < stages; i++){
         for(int j = 0; j < time_interval; j++){
-            //Calculate latency
             if(table[i][j] == 1)
                 buffer.push_back(j);
         }
     }
 
-    //Removing duplicates from the buffer
+    //Sorting the buffer
     std::sort(buffer.begin(), buffer.end());
-    std::unique_copy(buffer.begin(), buffer.end(), std::back_inserter(forbidden));
+
+    //Calculating the hidden latencies and pushing them into a local forbidden vector
+    for(int i = 0; i < buffer.size(); i++){
+        for(int j = i+1; j < buffer.size(); j++){
+            latency = buffer[j] - buffer[i];
+            forb.push_back(latency);
+        }
+    }
+
+    //Removing duplicates from the local forbidden vector
+    std::sort(forb.begin(), forb.end());
+    std::unique_copy(forb.begin(), forb.end(), std::back_inserter(forbidden));
+
+    //Removing 0 as a forbidden latency
+    forbidden.erase(forbidden.begin());
 
     cout<<endl;
     cout<<endl<<"Forbidden Latency : ";
@@ -89,12 +106,17 @@ void ReservationTable :: forbiddenLat(){
     }
 }
 
+void ReservationTable :: collisionVect(){
+
+}
+
 int main(){
 
     Cycles obj;
 
     obj.readTable();
     obj.forbiddenLat();
+    obj.collisionVect();
 
     return 0;
 }
