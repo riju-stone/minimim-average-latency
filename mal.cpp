@@ -109,18 +109,23 @@ void ReservationTable :: forbiddenLat(){
 
 void ReservationTable :: collisionVect(){
     int bit_pos;
-    collision.resize(forbidden.size());
 
-    for(int i = 0; i < collision.size(); i++){
-        
+    collision.reserve(time_interval);
+
+    for(int i = 0; i < time_interval; i++)
+        collision.push_back(0);
+
+    for(int i = 0; i < forbidden.size(); i++){
+        bit_pos = forbidden[i];
+        collision[bit_pos]  = 1;
     }
 
     cout<<endl<<"Collision Vector : ";
     cout<<"[ ";
-    for(int i = 0; i < forbidden.size(); i++){
+    for(int i = 0; i < time_interval; i++){
         cout<<collision[i]<<" ";
     }
-    cout<<" ]"<<endl;
+    cout<<"]"<<endl;
 }
 
 int main(){
