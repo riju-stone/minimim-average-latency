@@ -10,6 +10,7 @@ class ReservationTable{
         // TODO: Improve table system
         vector<int> table[10];
         vector<int> forbidden; 
+        vector<int> collision;
     public:
         //Create the reservation table
         void readTable();
@@ -107,7 +108,19 @@ void ReservationTable :: forbiddenLat(){
 }
 
 void ReservationTable :: collisionVect(){
+    int bit_pos;
+    collision.resize(forbidden.size());
 
+    for(int i = 0; i < collision.size(); i++){
+        
+    }
+
+    cout<<endl<<"Collision Vector : ";
+    cout<<"[ ";
+    for(int i = 0; i < forbidden.size(); i++){
+        cout<<collision[i]<<" ";
+    }
+    cout<<" ]"<<endl;
 }
 
 int main(){
