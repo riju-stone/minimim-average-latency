@@ -1,11 +1,12 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <unordered_map>
 
 using namespace std;
 
 class ReservationTable{
-    private:
+    protected:
         int stages, time_interval;            
         // TODO: Improve table system
         vector<int> table[10];
@@ -21,7 +22,11 @@ class ReservationTable{
 };
 
 class StateDiagram : public ReservationTable{
+    protected:
+        unordered_map<string, vector<int>> states;
     public:
+        void addStage();
+        void insertEdge();
         void buildSD();
 };
 
@@ -73,6 +78,7 @@ void ReservationTable :: forbiddenLat(){
     int pos1, pos2;
     vector<int> buffer;
     vector<int> forb;
+    //TODO : Optimize this code
 
     //Pushing all the obvious latensies into the buffer
     for(int i = 0; i < stages; i++){
@@ -93,11 +99,11 @@ void ReservationTable :: forbiddenLat(){
         }
     }
 
-    //Removing duplicates from the local forbidden vector
-    std::sort(forb.begin(), forb.end());
-    std::unique_copy(forb.begin(), forb.end(), std::back_inserter(forbidden));
+    //Sorting the elements and removing duplicates from the local forbidden vector
+    sort(forb.begin(), forb.end());
+    unique_copy(forb.begin(), forb.end(), std::back_inserter(forbidden));
 
-    //Removing 0 as a forbidden latency
+    //Removing 0 as it's not need as forbidden latency
     forbidden.erase(forbidden.begin());
 
     cout<<endl;
@@ -107,6 +113,7 @@ void ReservationTable :: forbiddenLat(){
     }
 }
 
+//This function calculates the collision vector
 void ReservationTable :: collisionVect(){
     int bit_pos;
 
@@ -120,6 +127,8 @@ void ReservationTable :: collisionVect(){
         collision[bit_pos]  = 1;
     }
 
+    reverse(collision.begin(), collision.end());
+
     cout<<endl<<"Collision Vector : ";
     cout<<"[ ";
     for(int i = 0; i < time_interval; i++){
@@ -128,13 +137,27 @@ void ReservationTable :: collisionVect(){
     cout<<"]"<<endl;
 }
 
+void StateDiagram :: buildSD(){
+
+    // Inserting the collision vector as the first state...
+    states.insert(make_pair("root", collision));
+
+}
+
 int main(){
 
     Cycles obj;
 
+    //Creating reservation table, forbidden latency and collision vector...
     obj.readTable();
     obj.forbiddenLat();
     obj.collisionVect();
+
+    //Generating the state diagram...
+
+    //Evaluating simple and greedy cycles...
+
+    //Calculating the minimum average latency...
 
     return 0;
 }
