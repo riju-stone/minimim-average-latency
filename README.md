@@ -1,5 +1,6 @@
 # Minimim Average Latency
-Calculates the Minimum Average Latency from a unifunctional pipeline reservation table...
+Calculates the Minimum Average Latency from a reservation table 
+of a unifunctional pipeline...
 
 ## Input
 Enter your reservation table in the `ReservationTable.txt` file
