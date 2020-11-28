@@ -3,7 +3,7 @@ Calculates the Minimum Average Latency from a reservation table
 of a unifunctional pipeline...
 
 ## Input
-Enter your reservation table in the `ReservationTable.txt` file
+Enter your reservation table in the `ReservationTable.txt` file.
 The program will take care of everything else...
 
 ## To Do
