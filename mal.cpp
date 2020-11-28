@@ -2,6 +2,9 @@
 #include <vector>
 #include <algorithm>
 #include <unordered_map>
+#include <fstream>
+#include <map>
+#include <list>
 
 using namespace std;
 
@@ -9,7 +12,7 @@ class ReservationTable{
     protected:
         int stages, time_interval;            
         // TODO: Improve table system
-        vector<int> table[10];
+        multimap<int, int> table;
         vector<int> forbidden; 
         vector<int> collision;
     public:
@@ -37,24 +40,66 @@ class Cycles : public StateDiagram{
 };
 
 void ReservationTable :: readTable(){
-    int temp;
+    
+    // NEW INPUT SYSTEM
+    ifstream fin;
+    fin.open("ReservationTable.txt", ifstream::in);
+    if(!fin){
+        cout<<"Cannot open file..."<<endl;
+        exit(1);
+    }
 
+    string str;
+    getline(fin, str);
+    stages = stoi(str);
+
+    getline(fin, str);
+    time_interval = stoi(str);
+    
+    /* OLD INPUT SYSTEM
     cout<<"Enter number of stages"<<endl;
     cin>>stages;
     cout<<"Enter the number of clock cycles"<<endl;
     cin>>time_interval;
 
-    //TODO: Improve the input process...
     for(int i = 0; i < stages; i++){
-        cout<<"Enter the values for Stage-"<<(i + 1)<<", row-wise (1 for job execituion 0 for nothing)"<<endl;
+        cout<<"Enter the values for Stage-"<<(i + 1)<<", row-wise (1 for job execution 0 for nothing)"<<endl;
         for(int j = 0; j < time_interval; j++){
             cin>>temp;
             table[i].push_back(temp);
         }
     }
+    */
 
-    // TODO: Refactor Code
+    int i = 0, j;
+    string::iterator it;
+
     cout<<"Reservation Table :"<<endl;
+    for(j = 1; j <= time_interval; j++)
+        cout<<"\t"<<"t"<<j;
+    cout<<endl;
+
+    while(!fin.eof()){
+        getline(fin, str);
+        i++;
+        j = 0;
+        cout<<"S"<<i<<"\t";
+        for(it = str.begin(); it != str.end(); it++){
+            if(*it == '1'){
+                cout<<"X"<<"\t";
+                j++;
+                table.insert(pair<int, int>(i, j));
+            }
+            else if(*it == '0'){
+                cout<<"0"<<"\t";
+                j++;
+            }
+        }
+        cout<<endl;
+    }
+    cout<<endl;
+    fin.close();
+    /* OLD OUTPUT SYSTEM
     for(int i = 0; i < stages; i++){
 
         cout<<"S"<<(i + 1)<<"\t";
@@ -70,10 +115,36 @@ void ReservationTable :: readTable(){
         else
             cout<<endl;
     }
+    */
 }
 
 void ReservationTable :: forbiddenLat(){
 
+    vector<int> row;
+    multimap<int, int>::iterator t;
+    vector<int>::iterator f;
+
+    int lat;
+
+    for(int i = 1; i <= stages; i++){
+        for(t = table.equal_range(i).first; t != table.equal_range(i).second; t++)
+            row.push_back((*t).second);
+            for(int p = 0; p < row.size(); p++) 
+                for(int q = 0; q < row.size(); q++){
+                    lat = row[q] - row[p];
+                    f = find(forbidden.begin(), forbidden.end(), lat);
+                    if(f == forbidden.end() && lat > 0)
+                        forbidden.push_back(lat);
+            }
+            row.clear();
+    }
+    sort(forbidden.begin(), forbidden.end());
+    cout<<"\nForbidden latencies: ";
+	for (int i = 0; i < forbidden.size(); i++)
+        cout<<" "<<forbidden[i];
+	cout<<endl;
+
+    /*
     int latency;
     int pos1, pos2;
     vector<int> buffer;
@@ -83,7 +154,7 @@ void ReservationTable :: forbiddenLat(){
     //Pushing all the obvious latensies into the buffer
     for(int i = 0; i < stages; i++){
         for(int j = 0; j < time_interval; j++){
-            if(table[i][j] == 1)
+            if(table[i][0] == 1 && table[i][j] == 1)
                 buffer.push_back(j);
         }
     }
@@ -111,6 +182,7 @@ void ReservationTable :: forbiddenLat(){
     for(int i = 0; i < forbidden.size(); i++){
         cout<<forbidden[i]<<", ";
     }
+    */
 }
 
 //This function calculates the collision vector
@@ -128,10 +200,11 @@ void ReservationTable :: collisionVect(){
     }
 
     reverse(collision.begin(), collision.end());
+    collision.pop_back();
 
     cout<<endl<<"Collision Vector : ";
     cout<<"[ ";
-    for(int i = 0; i < time_interval; i++){
+    for(int i = 0; i < time_interval - 1; i++){
         cout<<collision[i]<<" ";
     }
     cout<<"]"<<endl;
