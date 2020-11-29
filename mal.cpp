@@ -4,8 +4,9 @@
 #include <unordered_map>
 #include <fstream>
 #include <map>
-#include <list>
+#include <bitset>
 
+#define MAX 16
 using namespace std;
 
 class ReservationTable{
@@ -14,7 +15,7 @@ class ReservationTable{
         // TODO: Improve table system
         multimap<int, int> table;
         vector<int> forbidden; 
-        vector<int> collision;
+        vector<bool> collision;
     public:
         //Create the reservation table
         void readTable();
@@ -24,12 +25,35 @@ class ReservationTable{
         void collisionVect();
 };
 
+struct Edge;
+
+struct Header {
+    /*
+        A bitset stores bits (elements with only two possible values: 0 or 1, 
+        true or false, ...). The class emulates an array of bool elements, 
+        but optimized for space allocation: generally, each element occupies 
+        only one bit (which, on most systems, is eight times less than the smallest 
+        elemental type: char).
+    */
+    bitset<MAX> bset;
+    Header *next;
+    Edge *edge;
+};
+
+struct Edge{
+    vector<int> weights;
+    Edge *next;
+    Header *to;
+};
+
 class StateDiagram : public ReservationTable{
     protected:
-        unordered_map<string, vector<int>> states;
+        int cvsize; //Size of the collision vector
+        bitset<MAX> initialcv; //Stores the initial collision vector...
+        Header *start;
     public:
-        void addStage();
-        void insertEdge();
+        void addState(Header *state);
+        void insertEdge(Header *state);
         void buildSD();
 };
 
@@ -144,45 +168,6 @@ void ReservationTable :: forbiddenLat(){
         cout<<" "<<forbidden[i];
 	cout<<endl;
 
-    /*
-    int latency;
-    int pos1, pos2;
-    vector<int> buffer;
-    vector<int> forb;
-    //TODO : Optimize this code
-
-    //Pushing all the obvious latensies into the buffer
-    for(int i = 0; i < stages; i++){
-        for(int j = 0; j < time_interval; j++){
-            if(table[i][0] == 1 && table[i][j] == 1)
-                buffer.push_back(j);
-        }
-    }
-
-    //Sorting the buffer
-    std::sort(buffer.begin(), buffer.end());
-
-    //Calculating the hidden latencies and pushing them into a local forbidden vector
-    for(int i = 0; i < buffer.size(); i++){
-        for(int j = i+1; j < buffer.size(); j++){
-            latency = buffer[j] - buffer[i];
-            forb.push_back(latency);
-        }
-    }
-
-    //Sorting the elements and removing duplicates from the local forbidden vector
-    sort(forb.begin(), forb.end());
-    unique_copy(forb.begin(), forb.end(), std::back_inserter(forbidden));
-
-    //Removing 0 as it's not need as forbidden latency
-    forbidden.erase(forbidden.begin());
-
-    cout<<endl;
-    cout<<endl<<"Forbidden Latency : ";
-    for(int i = 0; i < forbidden.size(); i++){
-        cout<<forbidden[i]<<", ";
-    }
-    */
 }
 
 //This function calculates the collision vector
@@ -210,11 +195,130 @@ void ReservationTable :: collisionVect(){
     cout<<"]"<<endl;
 }
 
-void StateDiagram :: buildSD(){
+void StateDiagram :: addState(Header *state){
+    
+    // Stores and modifies the current new state and adds it
+    bitset<MAX> temp;
 
-    // Inserting the collision vector as the first state...
-    states.insert(make_pair("root", collision));
+    Header *ptr;
 
+    for(int i = 0; i < cvsize; i++){
+        // Adding new state at position *state
+        if(!state->bset[i]){
+            temp = state->bset;
+            temp = temp >> (i+1);
+            temp = temp | start->bset;
+
+            Header *node = new Header;
+
+            node->bset = temp;
+            node->next = nullptr;
+            node->edge = nullptr;
+
+            for(ptr = start; ptr->bset != node->bset && ptr->next; ptr = ptr->next){
+                if(ptr->bset != node->bset)
+                    ptr->next = node;
+            }
+        }
+    }
+}
+
+void StateDiagram :: insertEdge(Header *state){
+
+    bitset<MAX> temp;
+    Header *ptr;
+    Edge *head = nullptr;
+    Edge *e;
+
+    for(int i = 0; i < cvsize; i++){
+        if(!state->bset[i]){
+            temp = state->bset;
+            temp = temp >> (i+1);
+            temp = temp | start->bset;
+
+            for(ptr = start; ptr->bset != temp; ptr= ptr->next);
+            if(!head){
+                //If no edge is inserted
+                head = new Edge;
+                head->weights.push_back(i+1);
+                head->to = ptr;
+                head->next = nullptr;
+            }
+            else{
+                //Traverse to the end of the linked list and add an edge
+                for(e = head; e->to != ptr, e->next; e = e->next);
+                //If edge has no destination state
+                if(e->to != ptr){
+                    Edge *node = new Edge;
+                    node->weights.push_back(i+1);
+                    node->next = nullptr;
+                    node->to = ptr;
+                    e->next = node;
+                }
+                else{
+                     e->weights.push_back(i+1);
+                }
+            }
+        }
+    }
+    if(!head)
+	{
+		head = new Edge;
+		head->weights.push_back(cvsize+1);
+		head->next = nullptr;
+		head->to = start;
+	}
+	else
+	{
+		for(e = head; e->to != start && e->next; e = e->next);
+		if(e->to == start)
+			e->weights.push_back(cvsize+1);
+		else
+		{
+			Edge *node=new Edge;
+			node->weights.push_back(cvsize+1);
+			node->next = nullptr;
+			node->to = start;
+			e->next = node;
+		}
+	}
+
+    state->edge = head;
+    vector<int>::iterator it;
+
+    cout<<"State : "<<state->bset<<endl;
+    for(e = head; e != nullptr; e = e->next){
+        cout<<"\t";
+        for(it = e->weights.begin(); it != e->weights.end();){
+            cout<<*it;
+            if(++it != e->weights.end())
+                cout<<", ";
+        }
+        cout<<"\t => "<<e->to->bset;
+        cout<<endl;
+    }
+}
+
+void StateDiagram::buildSD(){
+    vector<int>::iterator it;
+
+    for(it = forbidden.begin(); it != forbidden.end(); it++)
+        initialcv.set(*it - 1, 1);
+
+    start = new Header;
+    start->bset = initialcv;
+    start->next = nullptr;
+    start->edge = nullptr;
+
+    cvsize = forbidden.size();
+
+    Header *ptr;
+    cout<<"\nState Diagram : "<<endl;
+    for(ptr = start; ptr != nullptr; ptr = ptr->next){
+        addState(ptr);
+        insertEdge(ptr);
+    }
+    cout<<endl;
 }
 
 int main(){
@@ -227,7 +331,8 @@ int main(){
     obj.collisionVect();
 
     //Generating the state diagram...
-
+    obj.buildSD();
+    
     //Evaluating simple and greedy cycles...
 
     //Calculating the minimum average latency...
