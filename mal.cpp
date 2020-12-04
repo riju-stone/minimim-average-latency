@@ -11,8 +11,9 @@ using namespace std;
 
 class ReservationTable{
     protected:
-        int stages, time_interval;            
-        // TODO: Improve table system
+        int stages, time_interval;
+
+        // Key : Cycle Number, Value : Execution Value (1 or 0)            
         multimap<int, int> table;
         vector<int> forbidden; 
         vector<bool> collision;
@@ -27,7 +28,7 @@ class ReservationTable{
 
 struct Edge;
 
-struct Header {
+struct State{
     /*
         A bitset stores bits (elements with only two possible values: 0 or 1, 
         true or false, ...). The class emulates an array of bool elements, 
@@ -35,25 +36,26 @@ struct Header {
         only one bit (which, on most systems, is eight times less than the smallest 
         elemental type: char).
     */
-    bitset<MAX> bset;
-    Header *next;
+    bitset<MAX> bset;   //Stores the states bitwise
     Edge *edge;
+    State *next;
 };
 
 struct Edge{
     vector<int> weights;
+    //Destination node pointer
+    State *to;
     Edge *next;
-    Header *to;
 };
 
 class StateDiagram : public ReservationTable{
     protected:
         int cvsize; //Size of the collision vector
-        bitset<MAX> initialcv; //Stores the initial collision vector...
-        Header *start;
+        bitset<MAX> initCol; //Stores the initial collision vector...
+        State *start;
     public:
-        void addState(Header *state);
-        void insertEdge(Header *state);
+        void addState (State *state);
+        void insertEdge (State *state);
         void buildSD();
 };
 
@@ -61,85 +63,64 @@ class Cycles : public StateDiagram{
     public:
         void simpleCycles();
         void greedyCycles();
+        void calcMAL();
 };
 
 void ReservationTable :: readTable(){
     
-    // NEW INPUT SYSTEM
+    //Improved Input System
     ifstream fin;
     fin.open("ReservationTable.txt", ifstream::in);
     if(!fin){
-        cout<<"Cannot open file..."<<endl;
+        std::cout<<"Cannot open file..."<<endl;
         exit(1);
     }
 
     string str;
     getline(fin, str);
+
+    /*
+        stoi("31337 geek") is 31337. The stoi() function takes a string as an argument and 
+        returns its value, excluding the characters...
+    */
+
     stages = stoi(str);
 
     getline(fin, str);
     time_interval = stoi(str);
-    
-    /* OLD INPUT SYSTEM
-    cout<<"Enter number of stages"<<endl;
-    cin>>stages;
-    cout<<"Enter the number of clock cycles"<<endl;
-    cin>>time_interval;
 
-    for(int i = 0; i < stages; i++){
-        cout<<"Enter the values for Stage-"<<(i + 1)<<", row-wise (1 for job execution 0 for nothing)"<<endl;
-        for(int j = 0; j < time_interval; j++){
-            cin>>temp;
-            table[i].push_back(temp);
-        }
-    }
-    */
-
+    // Improved Output System
     int i = 0, j;
     string::iterator it;
 
-    cout<<"Reservation Table :"<<endl;
+    std::cout<<"Reservation Table :"<<endl;
     for(j = 1; j <= time_interval; j++)
-        cout<<"\t"<<"t"<<j;
-    cout<<endl;
+        std::cout<<"\t"<<"t"<<j;
+
+    std::cout<<endl;
 
     while(!fin.eof()){
         getline(fin, str);
         i++;
         j = 0;
-        cout<<"S"<<i<<"\t";
+        std::cout<<"S"<<i<<"\t";
         for(it = str.begin(); it != str.end(); it++){
             if(*it == '1'){
-                cout<<"X"<<"\t";
+                std::cout<<"X"<<"\t";
                 j++;
                 table.insert(pair<int, int>(i, j));
             }
             else if(*it == '0'){
-                cout<<"0"<<"\t";
+                std::cout<<"0"<<"\t";
                 j++;
             }
         }
-        cout<<endl;
+        std::cout<<endl;
     }
-    cout<<endl;
-    fin.close();
-    /* OLD OUTPUT SYSTEM
-    for(int i = 0; i < stages; i++){
 
-        cout<<"S"<<(i + 1)<<"\t";
-        for(int j = 0; j < time_interval; j++){
-            cout<<table[i][j]<<"\t";
-        }
-        if( i == (stages - 1)){
-            cout<<endl;
-            cout<<"\t";
-            for(int j = 0; j < time_interval; j++)
-                cout<<"t"<<j<<"\t";
-        }
-        else
-            cout<<endl;
-    }
-    */
+    std::cout<<endl;
+
+    fin.close();
 }
 
 void ReservationTable :: forbiddenLat(){
@@ -155,19 +136,19 @@ void ReservationTable :: forbiddenLat(){
             row.push_back((*t).second);
             for(int p = 0; p < row.size(); p++) 
                 for(int q = 0; q < row.size(); q++){
-                    lat = row[q] - row[p];
+                    lat = row[q] - row[p];              // Subtracting all permutations of the time cycles to get various possible latencies
                     f = find(forbidden.begin(), forbidden.end(), lat);
-                    if(f == forbidden.end() && lat > 0)
+                    if(f == forbidden.end() && lat > 0)     // No need of pushing if latency is 0
                         forbidden.push_back(lat);
             }
             row.clear();
     }
     sort(forbidden.begin(), forbidden.end());
-    cout<<"\nForbidden latencies: ";
-	for (int i = 0; i < forbidden.size(); i++)
-        cout<<" "<<forbidden[i];
-	cout<<endl;
 
+    std::cout<<"\nForbidden latencies: ";
+	for (int i = 0; i < forbidden.size(); i++)
+        std::cout<<" "<<forbidden[i];
+	std::cout<<endl;
 }
 
 //This function calculates the collision vector
@@ -176,45 +157,53 @@ void ReservationTable :: collisionVect(){
 
     collision.reserve(time_interval);
 
+    //Initializing vector with 0s
     for(int i = 0; i < time_interval; i++)
         collision.push_back(0);
 
+    //Inserting 1s at proper bit positions
     for(int i = 0; i < forbidden.size(); i++){
         bit_pos = forbidden[i];
         collision[bit_pos]  = 1;
     }
 
+    //Reversing the collision vector
     reverse(collision.begin(), collision.end());
+
+    //Removing the redundant LSB
     collision.pop_back();
 
-    cout<<endl<<"Collision Vector : ";
-    cout<<"[ ";
+    std::cout<<endl<<"Collision Vector : ";
+    std::cout<<"[ ";
     for(int i = 0; i < time_interval - 1; i++){
-        cout<<collision[i]<<" ";
+        std::cout<<collision[i]<<" ";
     }
-    cout<<"]"<<endl;
+    std::cout<<"]"<<endl;
 }
 
-void StateDiagram :: addState(Header *state){
+void StateDiagram :: addState(State *state){
     
     // Stores and modifies the current new state and adds it
     bitset<MAX> temp;
 
-    Header *ptr;
+ State *ptr;
 
     for(int i = 0; i < cvsize; i++){
-        // Adding new state at position *state
+        // Adding new state at position start
         if(!state->bset[i]){
+
+            //Right Shifting current state ith no. of times and OR-ing with start
             temp = state->bset;
             temp = temp >> (i+1);
             temp = temp | start->bset;
 
-            Header *node = new Header;
+            State *node = new State;
 
             node->bset = temp;
             node->next = nullptr;
             node->edge = nullptr;
 
+            // If the new state is different than all the states currently available, then the new starte is added
             for(ptr = start; ptr->bset != node->bset && ptr->next; ptr = ptr->next){
                 if(ptr->bset != node->bset)
                     ptr->next = node;
@@ -223,10 +212,10 @@ void StateDiagram :: addState(Header *state){
     }
 }
 
-void StateDiagram :: insertEdge(Header *state){
+void StateDiagram :: insertEdge(State *state){
 
     bitset<MAX> temp;
-    Header *ptr;
+    State *ptr;
     Edge *head = nullptr;
     Edge *e;
 
@@ -286,16 +275,16 @@ void StateDiagram :: insertEdge(Header *state){
     state->edge = head;
     vector<int>::iterator it;
 
-    cout<<"State : "<<state->bset<<endl;
+    std::cout<<"State : "<<state->bset<<endl;
     for(e = head; e != nullptr; e = e->next){
-        cout<<"\t";
+        std::cout<<"\t";
         for(it = e->weights.begin(); it != e->weights.end();){
-            cout<<*it;
+            std::cout<<*it;
             if(++it != e->weights.end())
-                cout<<", ";
+                std::cout<<", ";
         }
-        cout<<"\t => "<<e->to->bset;
-        cout<<endl;
+        std::cout<<"\t => "<<e->to->bset;
+        std::cout<<endl;
     }
 }
 
@@ -303,22 +292,23 @@ void StateDiagram::buildSD(){
     vector<int>::iterator it;
 
     for(it = forbidden.begin(); it != forbidden.end(); it++)
-        initialcv.set(*it - 1, 1);
+        initCol.set(*it - 1, 1);
 
-    start = new Header;
-    start->bset = initialcv;
+    //Collision vector is the first and initial state
+    start = new State;
+    start->bset = initCol;
     start->next = nullptr;
     start->edge = nullptr;
 
     cvsize = forbidden.size();
 
-    Header *ptr;
-    cout<<"\nState Diagram : "<<endl;
+    State *ptr;
+    std::cout<<"\nState Diagram : "<<endl;
     for(ptr = start; ptr != nullptr; ptr = ptr->next){
         addState(ptr);
         insertEdge(ptr);
     }
-    cout<<endl;
+    std::cout<<endl;
 }
 
 int main(){
