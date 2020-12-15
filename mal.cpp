@@ -5,7 +5,6 @@
 #include <fstream>
 #include <map>
 #include <bitset>
-#include <list>
 
 #define MAX 16
 using namespace std;
@@ -13,8 +12,7 @@ using namespace std;
 class ReservationTable{
     protected:
         int stages, time_interval;
-
-        // Key : Cycle Number, Value : Execution Value (1 or 0)            
+        // Key : Cycle Number, Value : Execution Value (1 or 0) A multimap can have different values for the same keys           
         multimap<int, int> table;
         vector<int> forbidden; 
         vector<bool> collision;
@@ -67,14 +65,14 @@ class Cycles : public StateDiagram{
         vector<vector<string>> greedy;
         double mal;
     public:
-        void simpleCycles(State *node, vector<bitset<MAX>>, vector<string> cycle);
-        void greedyCycles(State *node, vector<bitset<MAX>>, vector<string> cycle);
+        void simpleCycles(State *node, vector<bitset<MAX>> trav, vector<string> cycle);
+        void greedyCycles(State *node, vector<bitset<MAX>> trav, vector<string> cycle);
         void calcMAL();
 };
 
 void ReservationTable :: readTable(){
     
-    //Improved Input System
+    //Improved File Input System
     ifstream fin;
     fin.open("ReservationTable.txt", ifstream::in);
     if(!fin){
@@ -430,7 +428,7 @@ void Cycles::calcMAL(){
         //Calculating the temp mal
         min = min / (*it).size();
 
-        //Storing the mal
+        //Storing the mal if its minimal
         if(min < mal)
             mal = min;
 
