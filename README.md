@@ -7,8 +7,8 @@ Enter your reservation table in the `ReservationTable.txt` file.
 The program will take care of everything else...
 
 ## To Do
-:white_check_mark: Add State Diagram Generator
-:white_check_mark: Add Simple and Greedy Cycles
-:white_check_mark: Add MAL calculation
+- Add State Diagram Generator :white_check_mark:
+- Add Simple and Greedy Cycles :white_check_mark:
+- Add MAL calculation :white_check_mark:
 - Refactor and improve some code
 - (Maybe some day) Add support for Multifunctional Pipelines
