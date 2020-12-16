@@ -133,7 +133,7 @@ void Cycles::calcMAL(){
                 break;
         }
 
-        //Calculating the temp777tttt
+        //Calculating the temp mal
         if(min < mal)
             mal = min;
 
