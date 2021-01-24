@@ -10,5 +10,5 @@ The program will take care of everything else...
 - Add State Diagram Generator :white_check_mark:
 - Add Simple and Greedy Cycles :white_check_mark:
 - Add MAL calculation :white_check_mark:
-- Refactor and improve some code
+- Refactor and improve some code :white_check_mark:
 - (Maybe some day) Add support for Multifunctional Pipelines
