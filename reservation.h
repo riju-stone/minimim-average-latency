@@ -128,9 +128,6 @@ void ReservationTable :: collisionVect(){
     //Reversing the collision vector
     reverse(collision.begin(), collision.end());
 
-    //Removing the redundant LSB
-    collision.pop_back();
-
     std::cout<<endl<<"Collision Vector : ";
     std::cout<<"[ ";
     for(int i = 0; i < time_interval - 1; i++){
